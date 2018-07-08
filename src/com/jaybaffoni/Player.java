@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import com.jaybaffoni.tiles.Tile;
 
 public class Player {
-	
+	//player version 7/7/18
 	String name;
 	int tileX;
 	int tileY;
