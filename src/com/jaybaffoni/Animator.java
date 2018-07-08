@@ -25,6 +25,7 @@ public class Animator {
 	
 	public void update(long time) {
 		if(running) {
+			//System.out.println(currentFrame);
 			if(time - prevTime >= speed) {
 				//update frame
 				currentFrame++;
@@ -38,14 +39,15 @@ public class Animator {
 	}
 	
 	public BufferedImage getFrame() {
+		//System.out.println(currentFrame);
 		return frames.get(currentFrame);
 	}
 	
 	public void start() {
 		running = true;
-		prevTime = 0;
-		frameAtPause = 0;
-		currentFrame = 0;
+		prevTime = System.currentTimeMillis();
+		frameAtPause = 1;
+		currentFrame = 1;
 	}
 	
 	public void stop() {

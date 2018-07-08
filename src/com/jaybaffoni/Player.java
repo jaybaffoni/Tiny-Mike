@@ -4,75 +4,268 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import com.jaybaffoni.tiles.Tile;
+
 public class Player {
 	
+	String name;
+	int tileX;
+	int tileY;
 	int x;
 	int y;
+	int relativeX;
+	int relativeY;
+	int newX, newY;
 	int dir;
-	int speed = 5;
-	int delay = 100;
+	int speed = 8;
+	int delayTime = 10;
+	//int delayReset = 100000;
+	//int delay = delayReset;
+	//int leftOver = 0;
 	long prevTime = 0;
 	boolean moving = false;
 	Animator animator;
 	ArrayList<ArrayList<BufferedImage>> images = new ArrayList<ArrayList<BufferedImage>>();
+	boolean lead = true;
+	Player tail = null;
+	boolean swapping = false;
+	Tile[][] theMap;
 	
 	int[] xMove = {1,0,-1,0};
 	int[] yMove = {0,1,0,-1};
 	
-	public Player(int x, int y) {
-		this.x = x;
-		this.y = y;
+	int totalInventory = 16;
+	int availableInventory = totalInventory;
+	int[] quantities = new int[100];
+	boolean isAcquiring = false;
+	long acquireTime = 0;
+	long prevAcquireTime = 0L;
+	Item recentDrop = null;
+	
+	public Player(int x, int y, boolean isLead, String name, Tile[][] theMap) {
+		this.theMap = theMap;
+		this.name = name;
+		this.lead = isLead;
+		if(lead) {
+			relativeX = 4;
+			relativeY = 4;
+		} else {
+			relativeX = 3;
+			relativeY = 4;
+		}
+		
+		tileX = x;
+		tileY = y;
+		this.x = this.newX = relativeX*64;
+		this.y = this.newY = relativeY*64;
 		for(int i = 0; i < 4; i++) {
 			images.add(new ArrayList<BufferedImage>());
 		}
 		loadImages();
+		for(int i = 0; i < 100; i++) {
+			quantities[i] = 0;
+		}
 	}
 	
 	public void update() {
-		//System.out.println("updating...");
+		//System.out.println("upd20ating...");
 		long time = System.currentTimeMillis();
+		
+		if(isAcquiring) {
+			//System.out.println("current time: " + time);
+			//System.out.println("prev time:    " + prevAcquireTime);
+			long diff2 = time - prevAcquireTime;
+			//System.out.println(diff2);
+			//System.out.println(time + " - " + prevAcquireTime + " = " + diff2);
+			//System.out.println("acquiring");
+			acquireTime -= diff2;
+			prevAcquireTime = time;
+			//System.out.println(acquireTime);
+			if(acquireTime <= 0) {
+				isAcquiring = false;
+			}
+		}
+		
 		if(moving) {
+			
 			animator.update(time);
-			move(dir, false);
+			if(x != newX || y != newY) {
+				move(dir, false);
+			} else {
+				stop();
+			}
+			
+		}
+		if(tail != null) {
+			tail.update();
+		}
+	}
+	
+	public void action() {
+		if(!isAcquiring) {
+			harvest();
 		}
 		
 	}
 	
-	public void go(int direction, boolean strafe) {
-		dir = direction;
-		animator.setFrames(images.get(dir));
-		if(!moving) {
-			System.out.println("moving");
-			animator.start();
-			moving = true;
+	public void harvest() {
+		Item drop = theMap[tileX][tileY].getDrop();
+		if(drop != null) {
+			if(addItemToInventory(drop)) {
+				recentDrop = drop;
+				isAcquiring = true;
+				acquireTime = 250;
+				prevAcquireTime = System.currentTimeMillis();
+				//System.out.println("Setting prevtime: " + prevAcquireTime);
+				theMap[tileX][tileY].takeItem();
+			}
 		}
 	}
 	
+	public boolean isAcquiring() {
+		return isAcquiring;
+	}
+	
+	public boolean addItemToInventory(Item item) {
+		if(availableInventory - item.getWeight() >= 0) {
+			quantities[item.getId()]++;
+			availableInventory -= item.getWeight();
+			return true;
+		}
+		return false;
+	}
+	
+	public int[] getInventory() {
+		return quantities;
+	}
+	
+	public void go(int direction, boolean strafe) {
+		//System.out.println("going " + name);
+		int followDir = -1;
+		if(tail != null) {
+			followDir = getDirectionToFollow();
+		}
+		if(!moving) {
+			//System.out.println("starting " + name);
+			dir = direction;
+			
+			tileX += xMove[dir];
+			if(tileX < 3 || tileX >= theMap.length - 3) {
+				tileX -= xMove[dir];
+				return;
+			}
+			tileY += yMove[dir];
+			if(tileY < 3 || tileY >= theMap.length - 3) {
+				tileY -= yMove[dir];
+				return;
+			}
+			relativeX += xMove[dir];
+			relativeY += yMove[dir];
+			if(lead) {
+				if(relativeX > 6) {
+					relativeX = 6;
+					x -= 64;
+					tail.relativeX--;
+					tail.x -= 64;
+				} else if(relativeX < 3) {
+					relativeX = 3;
+					x += 64;
+					tail.relativeX++;
+					tail.x += 64;
+				}
+				
+				if(relativeY > 6) {
+					relativeY = 6;
+					y -= 64;
+					tail.relativeY--;
+					tail.y -= 64;
+				} else if(relativeY < 3) {
+					relativeY = 3;
+					y += 64;
+					tail.relativeY++;
+					tail.y += 64;
+				}
+			}
+			
+			//System.out.println(relativeX + "," + relativeY);
+			newX = x + xMove[dir]*64;
+			newY = y + yMove[dir]*64;
+			animator.setFrames(images.get(dir));
+			//System.out.println("moving");
+			animator.start();
+			moving = true;
+			if(tail != null) {
+				tail.go(followDir, strafe);
+			}
+		}
+		
+	}
+	
 	public void move(int direction, boolean strafe) {
+		//System.out.println("moving " + name);
 		long time = System.currentTimeMillis();
-		if(time - prevTime >= delay) {
+		long diff = time - prevTime;
+		//System.out.println(diff);
+		if(diff > delayTime) {
 			x += xMove[dir] * speed;
 			y += yMove[dir] * speed;
+			
 			prevTime = time;
-		}
+			//delay = delayReset;
+		} 
 		
 		
 	}
 	
 	public void stop() {
-		System.out.println("stopping");
+		//System.out.println("stopping");
 		moving = false;
 		animator.stop();
+	}
+	
+	public int getDirectionToFollow() {
+		if(this.tileX > tail.tileX) {
+			return 0;
+		} else if(this.tileX < tail.tileX) {
+			return 2;
+		} else if(this.tileY > tail.tileY) {
+			return 1;
+		} else {
+			return 3;
+		}
+	}
+	
+	public void createTail() {
+		this.tail = new Player(tileX - 1, tileY, false, "dr_blue", theMap);
+	}
+	
+	public void setLead(boolean isLead) {
+		this.lead = isLead;
+	}
+	
+	public Player swap() {
+		
+		if(tail != null) {
+			go((dir + 2) % 4, false);
+			Player temp = tail;
+			tail.tail = this;
+			tail = null;
+			temp.setLead(true);
+			this.lead = false;
+			return temp;
+		} else {
+			return this;
+		}
 	}
 	
 	public void loadImages() {
 		BufferedImageLoader loader = new BufferedImageLoader();
 		BufferedImage ssRight = null, ssDown = null, ssLeft = null, ssUp = null;
 		try {
-			ssRight = loader.loadImage("images/dr_nitrogen_right_sheet.png");
-			ssDown = loader.loadImage("images/dr_nitrogen_down_sheet.png");
-			ssLeft = loader.loadImage("images/dr_nitrogen_left_sheet.png");
-			ssUp = loader.loadImage("images/dr_nitrogen_up_sheet.png");
+			ssRight = loader.loadImage("images/" + name + "_right_sheet.png");
+			ssDown = loader.loadImage("images/" + name + "_down_sheet.png");
+			ssLeft = loader.loadImage("images/" + name + "_left_sheet.png");
+			ssUp = loader.loadImage("images/" + name + "_up_sheet.png");
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
@@ -102,6 +295,22 @@ public class Player {
 	
 	public int getY() {
 		return y;
+	}
+	
+	public int getRX() {
+		return relativeX;
+	}
+	
+	public int getRY() {
+		return relativeY;
+	}
+	
+	public int getTileX() {
+		return tileX;
+	}
+	
+	public int getTileY() {
+		return tileY;
 	}
 
 }
