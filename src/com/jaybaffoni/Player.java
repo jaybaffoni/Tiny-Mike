@@ -19,9 +19,6 @@ public class Player {
 	int dir;
 	int speed = 8;
 	int delayTime = 10;
-	//int delayReset = 100000;
-	//int delay = delayReset;
-	//int leftOver = 0;
 	long prevTime = 0;
 	boolean moving = false;
 	Animator animator;
@@ -41,6 +38,8 @@ public class Player {
 	long acquireTime = 0;
 	long prevAcquireTime = 0L;
 	Item recentDrop = null;
+	
+	int equip = -1;
 	
 	public Player(int x, int y, boolean isLead, String name, Tile[][] theMap) {
 		this.theMap = theMap;
@@ -133,10 +132,6 @@ public class Player {
 			return true;
 		}
 		return false;
-	}
-	
-	public int[] getInventory() {
-		return quantities;
 	}
 	
 	public void go(int direction, boolean strafe) {
@@ -285,8 +280,26 @@ public class Player {
 		//animator.start();
 	}
 	
+	public void setEquip(int equip) {
+		this.equip = equip;
+	}
+	
+	public int getEquip() {
+		return equip;
+	}
+	
 	public BufferedImage getImage() {
 		return animator.getFrame();
+	}
+	
+	public ArrayList<Inventory> getInventory(){
+		ArrayList<Inventory> inventory = new ArrayList<Inventory>();
+		for(int i = 0; i < quantities.length; i++) {
+			if(quantities[i] != 0) {
+				inventory.add(new Inventory(i, quantities[i]));
+			}
+		}
+		return inventory;
 	}
 	
 	public int getX() {
