@@ -13,4 +13,10 @@ public class WaterTile extends Tile{
 		
 	}
 
+	@Override
+	public void harvest() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

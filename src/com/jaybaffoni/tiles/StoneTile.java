@@ -15,5 +15,11 @@ public class StoneTile extends Tile{
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void harvest() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }

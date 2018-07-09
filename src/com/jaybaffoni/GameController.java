@@ -5,6 +5,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.swing.JFrame;
 
+import com.jaybaffoni.entities.Chest;
 import com.jaybaffoni.entities.Entity;
 import com.jaybaffoni.entities.Tree;
 import com.jaybaffoni.tiles.GrassTile;
@@ -31,9 +32,11 @@ public class GameController {
 		createMap();
 		createObjects();
 		//player = new Player(10, 10, true, "dr_nitrogen", map);
-		player = new Player(mapSize / 2, mapSize / 2, true, "dr_nitrogen", map);
+		player = new Player(mapSize / 2, mapSize / 2, true, "dr_nitrogen", map, objects);
 		player.createTail();
-		
+		objects[player.getTileX()][player.getTileY()] = player;
+		objects[player.tail.getTileX()][player.tail.getTileY()] = player.tail;
+		objects[player.getTileX() + 2][player.getTileY() + 2] = new Chest();
 		panel = new GamePanel(this);
 	}
 	

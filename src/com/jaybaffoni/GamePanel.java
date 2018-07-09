@@ -29,7 +29,7 @@ public class GamePanel extends JPanel implements KeyListener{
 	int[] zoomSquareSizes = {64, 32, 16, 8, 4};
 	enum State
 	{
-	    PLAY, INVENTORY;
+	    PLAY, INVENTORY, STORAGE;
 	}
 	State state = State.PLAY;
 	BufferedImage[] items = new BufferedImage[64];
@@ -37,7 +37,9 @@ public class GamePanel extends JPanel implements KeyListener{
 	BufferedImage marker;
 	int startInventoryAt = 0;
 	int currentInventoryIndex = 0;
+	boolean markerInInventory = true;
 	ArrayList<Inventory> currentInventory;
+	ArrayList<Inventory> currentStorage;
 	int inventoryOffset = 0;
 	Font font = new Font( "Monospaced", Font.PLAIN, 16 );
 	Font bigFont = new Font( "Monospaced", Font.PLAIN, 32 );
@@ -115,13 +117,11 @@ public class GamePanel extends JPanel implements KeyListener{
         		if(partialMap[x][y] != null)
         		g.drawImage(textures[partialMap[x][y].getId()], x*squareSize, y*squareSize, squareSize, squareSize, null);
         		if(showPlayer) {
-        			if(partialMap[x][y].getDrop() != null) {
-        				if(partialMap[x][y].getDrop().isVisible()) {
-        					g.drawImage(items[partialMap[x][y].getDrop().getId()], x*squareSize, y*squareSize, squareSize, squareSize, null);
-        				}
-	        			
+        			if(!partialMap[x][y].getDrops().isEmpty()) {
+        				g.drawImage(items[partialMap[x][y].getDrop().getId()], x*squareSize, y*squareSize, squareSize, squareSize, null);
+        			
 	        		}
-        			if(partialObjects[x][y] != null) {
+        			if(partialObjects[x][y] != null && !(partialObjects[x][y] instanceof Player)) {
         				g.drawImage(objects[partialObjects[x][y].getId()], x*squareSize, y*squareSize, squareSize, squareSize, null);
         			}
         		}
@@ -149,7 +149,10 @@ public class GamePanel extends JPanel implements KeyListener{
         	g.drawImage(items[player.getEquip()], 16, size, 32, 32, null);
         }
         
-        if(state == State.INVENTORY) {
+        if(player.currentStorage != null) {
+        	state = State.STORAGE;
+        }
+        if(state == State.INVENTORY || state == State.STORAGE) {
         	g.setColor(Color.BLACK);
         	g.fillRect(6*64, 0, 4*64, 640);
         	g.setColor(Color.white);
@@ -157,6 +160,19 @@ public class GamePanel extends JPanel implements KeyListener{
         	g.drawString("Inventory", 7*64 - 32, 32);
         	g.setFont(font);
         	currentInventory = player.getInventory();
+        	if(state == State.STORAGE) {
+        		currentStorage = player.currentStorage.getStorage();
+	        	if(markerInInventory) {
+	        		if(currentInventory.isEmpty() && !currentStorage.isEmpty()) {
+	        			markerInInventory = false;
+	        		}
+	        	} else {
+	        		if(currentStorage.isEmpty() && !currentInventory.isEmpty()) {
+	        			markerInInventory = true;
+	        		}
+	        	}
+        	}
+        	
         	
         	int startY = 48;
         	int x = (6*64) + 32;
@@ -180,9 +196,45 @@ public class GamePanel extends JPanel implements KeyListener{
         		
         	}
         	if(currentInventory.size() > 0) {
-        		g.drawImage(marker, 6*64, (currentInventoryIndex + 1) * 48 + 8, 32, 32, null);
+        		if(markerInInventory)
+        			g.drawImage(marker, 6*64, (currentInventoryIndex + 1) * 48 + 8, 32, 32, null);
         	}
         	
+        }
+        if(state == State.STORAGE) {
+        	g.setColor(Color.BLACK);
+        	g.fillRect(0, 0, 4*64, 640);
+        	g.setColor(Color.white);
+        	g.setFont(bigFont);
+        	g.drawString("Storage", 32, 32);
+        	g.setFont(font);
+        	
+        	
+        	int startY = 48;
+        	int x = 32;
+        	for(int i = 0; i < 18; i++) {
+        		if(i < currentStorage.size()) {
+        			g.setColor(Color.white);
+        			g.drawRect(0, startY * (i + 1), 4*64, 48);
+        			g.drawImage(items[currentStorage.get(i).getId()], x, startY * (i + 1) + 8, 32, 32, null);
+        			String quantity;
+            		if(currentStorage.get(i).getQuantity() < 10){
+            			quantity = "0" + currentStorage.get(i).getQuantity();
+            		} else {
+            			quantity = currentStorage.get(i).getQuantity() + "";
+            		}
+            		
+            		g.drawString("x" + quantity, 0 + 72, (i + 1) * 48 + 20);
+            		g.drawString(currentStorage.get(i).getName(), 0 + 72, (i + 1) * 48 + 36);
+        		} else {
+        			break;
+        		}
+        		
+        	}
+        	if(currentStorage.size() > 0) {
+        		if(!markerInInventory)
+        			g.drawImage(marker, 0, (currentInventoryIndex + 1) * 48 + 8, 32, 32, null);
+        	}
         }
         
         
@@ -205,6 +257,8 @@ public class GamePanel extends JPanel implements KeyListener{
 					player = player.swap();
 					controller.setPlayer(player);
 				} else if(code == KeyEvent.VK_SPACE) {
+					player.harvest();
+				} else if(code == KeyEvent.VK_ENTER) {
 					player.action();
 				}
 			}
@@ -223,8 +277,71 @@ public class GamePanel extends JPanel implements KeyListener{
 				if(currentInventoryIndex < 0) {
 					currentInventoryIndex = 0;
 				}
-			} else if(code == KeyEvent.VK_SPACE) {
+			} else if(code == KeyEvent.VK_E) {
 				player.setEquip(currentInventory.get(currentInventoryIndex).getId());
+			}
+		} else if(state == State.STORAGE) {
+			currentInventory = player.getInventory();
+			currentStorage = player.currentStorage.getStorage();
+			if(code == KeyEvent.VK_SHIFT) {
+				player = player.swap();
+				controller.setPlayer(player);
+			} else if(code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
+				currentInventoryIndex++;
+				if(markerInInventory) {
+					if(currentInventoryIndex >= currentInventory.size()) {
+						currentInventoryIndex = currentInventory.size() - 1;
+					}
+				} else {
+					if(currentInventoryIndex >= currentStorage.size()) {
+						currentInventoryIndex = currentStorage.size() - 1;
+					}
+				}
+				
+			}  else if(code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
+				currentInventoryIndex--;
+				if(currentInventoryIndex < 0) {
+					currentInventoryIndex = 0;
+				}
+			}  else if(code == KeyEvent.VK_LEFT || code == KeyEvent.VK_A) {
+				if(markerInInventory && currentStorage.size() > 0) {
+					markerInInventory = false;
+					if(currentInventoryIndex >= currentStorage.size()) {
+						currentInventoryIndex = currentStorage.size() - 1;
+					}
+				}
+			}  else if(code == KeyEvent.VK_RIGHT || code == KeyEvent.VK_D) {
+				if(!markerInInventory && currentInventory.size() > 0) {
+					markerInInventory = true;
+					if(currentInventoryIndex >= currentInventory.size()) {
+						currentInventoryIndex = currentInventory.size() - 1;
+					}
+				}
+			}  else if(code == KeyEvent.VK_E) {
+				if(markerInInventory) {
+					player.setEquip(currentInventory.get(currentInventoryIndex).getId());
+				}
+			}  else if(code == KeyEvent.VK_SPACE) {
+				if(markerInInventory) {
+					if(currentInventory.size() > 0) {
+						//marker is showing
+						if(player.addToStorage(currentInventory.get(currentInventoryIndex).getId())) {
+							if(currentInventoryIndex > 0) {
+								currentInventoryIndex--;
+							}
+						}
+						
+					}
+				} else {
+					if(currentStorage.size() > 0) {
+						//marker is showing
+						if(player.addFromStorage(currentStorage.get(currentInventoryIndex).getId())) {
+							if(currentInventoryIndex > 0) {
+								currentInventoryIndex--;
+							}
+						}
+					}
+				}
 			}
 		}
 		
@@ -244,6 +361,10 @@ public class GamePanel extends JPanel implements KeyListener{
 			if(state == State.PLAY) {
 				state = State.INVENTORY;
 			} else {
+				if(player.currentStorage != null) {
+					player.currentStorage = null;
+					player.tail.currentStorage = null;
+				}
 				state = State.PLAY;
 			}
 			

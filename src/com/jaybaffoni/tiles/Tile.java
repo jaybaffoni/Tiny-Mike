@@ -1,13 +1,13 @@
 package com.jaybaffoni.tiles;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.ArrayList;
 
 import com.jaybaffoni.Item;
 
 public abstract class Tile {
 	
 	int id;
-	Item drop;
+	ArrayList<Item> drops = new ArrayList<Item>();
 	long restoreTime;
 	long prevTime = System.currentTimeMillis();
 	
@@ -20,14 +20,24 @@ public abstract class Tile {
 	}
 	
 	public Item getDrop() {
-		return drop;
+		return drops.get(0);
+	}
+	
+	public ArrayList<Item> getDrops(){
+		return drops;
+	}
+	
+	public void addDrops(ArrayList<Item> toAdd) {
+		drops.addAll(toAdd);
 	}
 	
 	public void takeItem() {
 		prevTime = System.currentTimeMillis();
-		drop = null;
+		drops.remove(0);
 	}
 	
 	public abstract void update();
+	
+	public abstract void harvest();
 
 }

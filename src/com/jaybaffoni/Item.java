@@ -3,8 +3,8 @@ package com.jaybaffoni;
 public class Item {
 	
 int id;
-int[] weights = {4,1,1};
-boolean[] visible = {true, false, true};
+int[] weights = {2,1,1,1};
+//boolean[] visible = {true, false, true};
 
 	
 	public Item(int id) {
@@ -19,8 +19,8 @@ boolean[] visible = {true, false, true};
 		return weights[id];
 	}
 
-	public boolean isVisible() {
+	/*public boolean isVisible() {
 		return visible[id];
-	}
+	}*/
 	
 }

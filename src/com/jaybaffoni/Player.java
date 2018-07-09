@@ -3,10 +3,13 @@ package com.jaybaffoni;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
+import com.jaybaffoni.entities.Chest;
+import com.jaybaffoni.entities.Entity;
 import com.jaybaffoni.tiles.Tile;
 
-public class Player {
+public class Player extends Entity{
 	//player version 7/7/18
 	String name;
 	int tileX;
@@ -27,6 +30,7 @@ public class Player {
 	Player tail = null;
 	boolean swapping = false;
 	Tile[][] theMap;
+	Entity[][] theObjects;
 	
 	int[] xMove = {1,0,-1,0};
 	int[] yMove = {0,1,0,-1};
@@ -39,10 +43,15 @@ public class Player {
 	long prevAcquireTime = 0L;
 	Item recentDrop = null;
 	
+	int attack = 1;
+	int destroy = 1;
 	int equip = -1;
 	
-	public Player(int x, int y, boolean isLead, String name, Tile[][] theMap) {
+	Chest currentStorage = null;
+	
+	public Player(int x, int y, boolean isLead, String name, Tile[][] theMap, Entity[][] objects) {
 		this.theMap = theMap;
+		this.theObjects = objects;
 		this.name = name;
 		this.lead = isLead;
 		if(lead) {
@@ -101,24 +110,46 @@ public class Player {
 	}
 	
 	public void action() {
-		if(!isAcquiring) {
-			harvest();
+		
+		Entity temp = theObjects[tileX + xMove[dir]][tileY + yMove[dir]];
+		if(temp != null) {
+			temp.getDefaultAction(this);
+		} else {
+			theMap[tileX + xMove[dir]][tileY + yMove[dir]].harvest();
 		}
 		
 	}
 	
+	public void attack() {
+		
+	}
+	
+	public void interact(Entity temp) {
+		if(temp instanceof Chest) {
+			currentStorage = (Chest) temp;
+			tail.currentStorage = (Chest) temp;
+		}
+	}
+	
+	public void destroy(Entity temp) {
+		if(temp.reduceHealth(destroy)) {
+			theMap[tileX + xMove[dir]][tileY + yMove[dir]].addDrops(temp.getDrops());
+			theObjects[tileX + xMove[dir]][tileY + yMove[dir]] = null;
+			
+		}
+	}
+	
 	public void harvest() {
-		Item drop = theMap[tileX][tileY].getDrop();
-		if(drop != null) {
-			if(addItemToInventory(drop)) {
-				recentDrop = drop;
-				isAcquiring = true;
-				acquireTime = 250;
-				prevAcquireTime = System.currentTimeMillis();
-				//System.out.println("Setting prevtime: " + prevAcquireTime);
-				theMap[tileX][tileY].takeItem();
+		if(!isAcquiring) {
+			Iterator<Item> iterator = theMap[tileX][tileY].getDrops().iterator();
+			while (iterator.hasNext()) {
+			   Item drop = iterator.next();
+			   if(addItemToInventory(drop)) {
+				   iterator.remove();
+			   }
 			}
 		}
+		
 	}
 	
 	public boolean isAcquiring() {
@@ -134,6 +165,26 @@ public class Player {
 		return false;
 	}
 	
+	public boolean addToStorage(int id) {
+		Item temp = new Item(id);
+		if(currentStorage.addToStorage(temp)) {
+			quantities[id]--;
+			availableInventory += temp.getWeight();
+			if(quantities[id] <= 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean addFromStorage(int id) {
+		Item temp = new Item(id);
+		if(addItemToInventory(temp)) {
+			return currentStorage.reduceStorage(temp);
+		}
+		return false;
+	}
+	
 	public void go(int direction, boolean strafe) {
 		//System.out.println("going " + name);
 		int followDir = -1;
@@ -143,55 +194,60 @@ public class Player {
 		if(!moving) {
 			//System.out.println("starting " + name);
 			dir = direction;
-			
-			tileX += xMove[dir];
-			if(tileX < 3 || tileX >= theMap.length - 3) {
-				tileX -= xMove[dir];
-				return;
-			}
-			tileY += yMove[dir];
-			if(tileY < 3 || tileY >= theMap.length - 3) {
-				tileY -= yMove[dir];
-				return;
-			}
-			relativeX += xMove[dir];
-			relativeY += yMove[dir];
-			if(lead) {
-				if(relativeX > 6) {
-					relativeX = 6;
-					x -= 64;
-					tail.relativeX--;
-					tail.x -= 64;
-				} else if(relativeX < 3) {
-					relativeX = 3;
-					x += 64;
-					tail.relativeX++;
-					tail.x += 64;
+			if(theObjects[tileX + xMove[dir]][tileY + yMove[dir]] == null || theObjects[tileX + xMove[dir]][tileY + yMove[dir]] instanceof Player) {
+				tileX += xMove[dir];
+				if(tileX < 3 || tileX >= theMap.length - 3) {
+					tileX -= xMove[dir];
+					return;
+				}
+				tileY += yMove[dir];
+				if(tileY < 3 || tileY >= theMap.length - 3) {
+					tileY -= yMove[dir];
+					return;
+				}
+				relativeX += xMove[dir];
+				relativeY += yMove[dir];
+				if(lead) {
+					if(relativeX > 6) {
+						relativeX = 6;
+						x -= 64;
+						tail.relativeX--;
+						tail.x -= 64;
+					} else if(relativeX < 3) {
+						relativeX = 3;
+						x += 64;
+						tail.relativeX++;
+						tail.x += 64;
+					}
+					
+					if(relativeY > 6) {
+						relativeY = 6;
+						y -= 64;
+						tail.relativeY--;
+						tail.y -= 64;
+					} else if(relativeY < 3) {
+						relativeY = 3;
+						y += 64;
+						tail.relativeY++;
+						tail.y += 64;
+					}
 				}
 				
-				if(relativeY > 6) {
-					relativeY = 6;
-					y -= 64;
-					tail.relativeY--;
-					tail.y -= 64;
-				} else if(relativeY < 3) {
-					relativeY = 3;
-					y += 64;
-					tail.relativeY++;
-					tail.y += 64;
+				//System.out.println(relativeX + "," + relativeY);
+				newX = x + xMove[dir]*64;
+				newY = y + yMove[dir]*64;
+				animator.setFrames(images.get(dir));
+				//System.out.println("moving");
+				animator.start();
+				moving = true;
+				if(tail != null) {
+					tail.go(followDir, strafe);
 				}
+			} else {
+				animator.setFrames(images.get(dir));
 			}
 			
-			//System.out.println(relativeX + "," + relativeY);
-			newX = x + xMove[dir]*64;
-			newY = y + yMove[dir]*64;
-			animator.setFrames(images.get(dir));
-			//System.out.println("moving");
-			animator.start();
-			moving = true;
-			if(tail != null) {
-				tail.go(followDir, strafe);
-			}
+			
 		}
 		
 	}
@@ -231,7 +287,7 @@ public class Player {
 	}
 	
 	public void createTail() {
-		this.tail = new Player(tileX - 1, tileY, false, "dr_blue", theMap);
+		this.tail = new Player(tileX - 1, tileY, false, "dr_blue", theMap, theObjects);
 	}
 	
 	public void setLead(boolean isLead) {
@@ -324,6 +380,18 @@ public class Player {
 	
 	public int getTileY() {
 		return tileY;
+	}
+
+	@Override
+	public void getDefaultAction(Player player) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public ArrayList<Item> getDrops() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

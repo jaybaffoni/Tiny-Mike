@@ -1,5 +1,10 @@
 package com.jaybaffoni.entities;
 
+import java.util.ArrayList;
+
+import com.jaybaffoni.Item;
+import com.jaybaffoni.Player;
+
 public abstract class Entity {
 	
 	/*
@@ -36,6 +41,9 @@ public abstract class Entity {
 		this.health = health;
 	}
 	
+	public abstract void getDefaultAction(Player player);
+	
+	public abstract ArrayList<Item> getDrops();
 	
 
 }

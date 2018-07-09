@@ -4,7 +4,7 @@ public class Inventory {
 	
 	int id;
 	int quantity;
-	String[] names = {"Lava Stone", "Hay", "Desert Flower"};
+	String[] names = {"Lava Stone", "Hay", "Desert Flower", "Wood"};
 	
 	public Inventory(int id, int quantity) {
 		super();
