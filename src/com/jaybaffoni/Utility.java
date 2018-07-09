@@ -14,4 +14,8 @@ public class Utility {
 		
 	}
 
+	
+	public static int random() {
+		return ThreadLocalRandom.current().nextInt(0,100);
+	}
 }

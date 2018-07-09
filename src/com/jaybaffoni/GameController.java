@@ -5,6 +5,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.swing.JFrame;
 
+import com.jaybaffoni.entities.Entity;
+import com.jaybaffoni.entities.Tree;
 import com.jaybaffoni.tiles.GrassTile;
 import com.jaybaffoni.tiles.LavaTile;
 import com.jaybaffoni.tiles.SandTile;
@@ -19,6 +21,7 @@ public class GameController {
 	int speed = 10;
 	int mapSize = 640;
 	Tile[][] map = new Tile[mapSize][mapSize];
+	Entity[][] objects = new Entity[mapSize][mapSize];
 	int visibleSize = 10;
 	int lavaTiles = 0;
 	
@@ -26,8 +29,9 @@ public class GameController {
 	
 	public GameController() {
 		createMap();
-		player = new Player(10, 10, true, "dr_nitrogen", map);
-		//player = new Player(mapSize / 2, mapSize / 2, true, "dr_nitrogen", map);
+		createObjects();
+		//player = new Player(10, 10, true, "dr_nitrogen", map);
+		player = new Player(mapSize / 2, mapSize / 2, true, "dr_nitrogen", map);
 		player.createTail();
 		
 		panel = new GamePanel(this);
@@ -38,6 +42,56 @@ public class GameController {
 		createAndShowGUI();
 	}
 	
+	public void createObjects() {
+		for(int i = 0; i < mapSize; i++) {
+			for(int j = 0; j < mapSize; j++) {
+				int rand = Utility.random();
+				switch(map[i][j].getId()) {
+				case 0:
+					break;
+				case 1:
+					break;
+				case 2:
+					break;
+				case 3:
+					if(Utility.probability(10)) {
+						objects[i][j] = new Tree(2, i, j);
+					}
+					break;
+				case 4:
+					break;
+				case 5:
+					break;
+				case 6:
+					if(rand < 1) {
+						objects[i][j] = new Tree(1, i, j);
+					} else if(rand < 5) {
+						objects[i][j] = new Tree(0, i, j);
+					}
+					break;
+				case 7:
+					if(rand < 4) {
+						objects[i][j] = new Tree(1, i, j);
+					} else if(rand < 12) {
+						objects[i][j] = new Tree(0, i, j);
+					} else if(rand < 20) {
+						objects[i][j] = new Tree(3, i, j);
+					}
+					break;
+				case 8:
+					if(rand < 10) {
+						objects[i][j] = new Tree(1, i, j);
+					} else if(rand < 20) {
+						objects[i][j] = new Tree(0, i, j);
+					} else if(rand < 50) {
+						objects[i][j] = new Tree(3, i, j);
+					}
+					break;
+				}
+			}
+		}
+	}
+	
 	public void createMap() {
 		Noise2 perlin = new Noise2();
 		lavaTiles = 0;
@@ -46,8 +100,8 @@ public class GameController {
 				if(i < 3 || j < 3 || i >= mapSize - 3 || j >= mapSize - 3) {
 					map[i][j] = new StoneTile(10);
 				} else {
-					double e = perlin.noise((double)i/67, (double)j/67, .25);
-					double m = perlin.noise((double)i/67, (double)j/67, 1.103);
+					double e = perlin.noise((double)i/47, (double)j/47, .25);
+					double m = perlin.noise((double)i/47, (double)j/47, 1.103);
 					e *= 2;
 					m *= 2;
 					if(m < lowest) lowest = m;
@@ -130,6 +184,26 @@ public class GameController {
 			for(int y = 0; y < 0 + visibleSize; y++) {
 				try {
 					toReturn[x][y] = map[x + startX][y + startY];
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
+		}
+		
+		return toReturn;
+	}
+	
+	public Entity[][] getVisibleObjects(){
+		//System.out.println(player.getTileX() + "," + player.getRX());
+		int startX = player.getTileX() - player.getRX();
+		int startY = player.getTileY() - player.getRY();
+		Entity[][] toReturn = new Entity[visibleSize][visibleSize];
+		
+		for(int x = 0; x < 0 + visibleSize; x++) {
+			for(int y = 0; y < 0 + visibleSize; y++) {
+				try {
+					toReturn[x][y] = objects[x + startX][y + startY];
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

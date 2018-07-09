@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
+import com.jaybaffoni.entities.Entity;
 import com.jaybaffoni.tiles.Tile;
 
 public class GamePanel extends JPanel implements KeyListener{
@@ -22,6 +23,7 @@ public class GamePanel extends JPanel implements KeyListener{
 	int size;
 	BufferedImage[] textures = new BufferedImage[16];
 	Tile[][] partialMap;
+	Entity[][] partialObjects;
 	int zoomLevel = 0;
 	int[] zoomMapSizes = {10,20,40,80,160};
 	int[] zoomSquareSizes = {64, 32, 16, 8, 4};
@@ -31,6 +33,7 @@ public class GamePanel extends JPanel implements KeyListener{
 	}
 	State state = State.PLAY;
 	BufferedImage[] items = new BufferedImage[64];
+	BufferedImage[] objects = new BufferedImage[64];
 	BufferedImage marker;
 	int startInventoryAt = 0;
 	int currentInventoryIndex = 0;
@@ -56,15 +59,18 @@ public class GamePanel extends JPanel implements KeyListener{
 		BufferedImageLoader loader = new BufferedImageLoader();
 		BufferedImage textureImage = null;
 		BufferedImage itemsImage = null;
+		BufferedImage objectsImage = null;
 		try {
 			textureImage = loader.loadImage("images/texturesSheet2.png");
 			itemsImage = loader.loadImage("images/itemsSheet.png");
 			marker = loader.loadImage("images/marker.png");
+			objectsImage = loader.loadImage("images/objects.png");
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 		SpriteSheet textureSheet = new SpriteSheet(textureImage);
 		SpriteSheet itemsSheet = new SpriteSheet(itemsImage);
+		SpriteSheet objectsSheet = new SpriteSheet(objectsImage);
 		int count = 0;
 		for(int i = 0; i < 4; i++) {
 			for(int j = 0; j < 4; j++) {
@@ -77,6 +83,7 @@ public class GamePanel extends JPanel implements KeyListener{
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
 				items[count] = itemsSheet.grabSprite(j*32, i*32);
+				objects[count] = objectsSheet.grabSprite(j*32, i*32);
 				count++;
 			}
 		}
@@ -99,6 +106,7 @@ public class GamePanel extends JPanel implements KeyListener{
 		}
 		if(zoomLevel == 0) {
 			partialMap = controller.getVisibleMap();
+			partialObjects = controller.getVisibleObjects();
 		} else {
 			partialMap = controller.getSurroundingMap(mapSize);
 		}
@@ -113,10 +121,14 @@ public class GamePanel extends JPanel implements KeyListener{
         				}
 	        			
 	        		}
+        			if(partialObjects[x][y] != null) {
+        				g.drawImage(objects[partialObjects[x][y].getId()], x*squareSize, y*squareSize, squareSize, squareSize, null);
+        			}
         		}
         		
         	}
         }
+        
         //paint player
         if(showPlayer) {
         	if(player.tail != null) {
