@@ -3,7 +3,7 @@ package com.jaybaffoni;
 public class Item {
 	
 int id;
-int[] weights = {2,1,1,1};
+int[] weights = {2,1,1,4,1,2,2,1};
 //boolean[] visible = {true, false, true};
 
 	

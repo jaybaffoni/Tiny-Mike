@@ -9,8 +9,8 @@ import com.jaybaffoni.Player;
 
 public class Chest extends Entity {
 	
-	int originalCapacity = 50;
-	int currentAvailability = 50;
+	public int originalCapacity = 100;
+	public int currentAvailability = 100;
 	HashMap<Integer, Integer> storage = new HashMap<Integer, Integer>();
 	
 	public Chest() {
@@ -29,12 +29,15 @@ public class Chest extends Entity {
 				storage.put(temp.getId(), 1);
 			}
 			currentAvailability -= temp.getWeight();
+			System.out.println(currentAvailability);
 			return true;
 		}
 	}
 	
 	public boolean reduceStorage(Item temp) {
 		storage.put(temp.getId(), storage.get(temp.getId()) - 1);
+		currentAvailability += temp.getWeight();
+		System.out.println(currentAvailability);
 		if(storage.get(temp.getId()) <= 0) {
 			storage.remove(temp.getId());
 			return true;

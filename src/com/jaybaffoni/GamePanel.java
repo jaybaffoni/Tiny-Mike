@@ -42,7 +42,7 @@ public class GamePanel extends JPanel implements KeyListener{
 	ArrayList<Inventory> currentStorage;
 	int inventoryOffset = 0;
 	Font font = new Font( "Monospaced", Font.PLAIN, 16 );
-	Font bigFont = new Font( "Monospaced", Font.PLAIN, 32 );
+	Font bigFont = new Font( "Monospaced", Font.PLAIN, 24 );
     
 
 	public GamePanel(GameController controller) {
@@ -157,7 +157,7 @@ public class GamePanel extends JPanel implements KeyListener{
         	g.fillRect(6*64, 0, 4*64, 640);
         	g.setColor(Color.white);
         	g.setFont(bigFont);
-        	g.drawString("Inventory", 7*64 - 32, 32);
+        	g.drawString("Inventory: " + (player.totalInventory - player.availableInventory) + "/" + player.totalInventory, 7*64 - 48, 32);
         	g.setFont(font);
         	currentInventory = player.getInventory();
         	if(state == State.STORAGE) {
@@ -206,7 +206,7 @@ public class GamePanel extends JPanel implements KeyListener{
         	g.fillRect(0, 0, 4*64, 640);
         	g.setColor(Color.white);
         	g.setFont(bigFont);
-        	g.drawString("Storage", 32, 32);
+        	g.drawString("Storage: " + (player.currentStorage.originalCapacity - player.currentStorage.currentAvailability) + "/" + player.currentStorage.originalCapacity, 16, 32);
         	g.setFont(font);
         	
         	

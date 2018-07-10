@@ -35,7 +35,7 @@ public class Player extends Entity{
 	int[] xMove = {1,0,-1,0};
 	int[] yMove = {0,1,0,-1};
 	
-	int totalInventory = 16;
+	int totalInventory = 25;
 	int availableInventory = totalInventory;
 	int[] quantities = new int[100];
 	boolean isAcquiring = false;
